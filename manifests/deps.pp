@@ -1,0 +1,3 @@
+php-mbstring
+php-gd
+
