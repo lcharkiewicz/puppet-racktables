@@ -1,24 +1,24 @@
 # RackTables module for Puppet
 
-Puppet module to manage RackTables installation. This module clones git repository to demanded location, inits database (or leaves it for manual initialization via web) and provides simple vhost for apache (httpd) (and nginx in future). Module installs necessary PHP dependencies.  
+Puppet module to manage [RackTables](http://racktables.org/) installation. This module clones git repository to demanded location, inits database (or leaves it for manual initialization via web) and provides simple vhost for apache (httpd) (and nginx in future). Module installs necessary PHP dependencies.  
 
 ## Usage
-Get RackTables from git repo and use apache vhost and continue installation via web:
+Get RackTables from [its git repo](https://github.com/RackTables/racktables) and use apache vhost and continue installation via web:
 
-  class { racktables:
-    install_dir    => '/var/www/htdocs/racktables',
-  }
+    class { 'racktables':
+      install_dir    => '/var/www/htdocs/racktables',
+    }
 
 Get RackTables from git repo and put variables in secret.php to init database automatically:
 
-  class { racktables:
-    install_dir    => '/var/www/htdocs/racktables',
-    use_installer  => false,
-    db_name        => 'racktables',
-    db_host        => 'localhost',
-    db_username    => 'racktables',
-    db_password    => 'racktables'
-  }
+    class { 'racktables':
+      install_dir    => '/var/www/htdocs/racktables',
+      use_installer  => false,
+      db_name        => 'racktables',
+      db_host        => 'localhost',
+      db_username    => 'racktables',
+      db_password    => 'racktables'
+    }
 
 
 ## Assumptions

@@ -1,9 +1,9 @@
 # == Class: racktables
 #
-# Simple module to manage RackTables installation.
+# Simple module to manage RackTables (http://racktables.org) installation.
 # Module clones git repo and put files in a selected place.
 # After that you have to finish installation via web browser or you can init
-# an empty database (it is fully automated then but it is not a default option!).
+# an empty database (it is fully automated but it is not a default option!).
 # Module installs necessary PHP dependencies.
 # Module assumes you have already created MySQL database.
 # Module provides simple vhost config file as well.
@@ -17,7 +17,7 @@
 #
 # [*use_installer*]
 #   Does not create secret.php and you have to use web installer.
-#   If set false it inits datebase and put parameters in secret.php. 
+#   If set false it inits datebase and put parameters in secret.php.
 #   With 'false' it is fully automated.
 #
 # [*db_name*]
@@ -61,14 +61,14 @@
 #  Get RackTables from git repo and use apache vhost
 #   and continue installation via web:
 #
-#  class { racktables:
+#  class { 'racktables':
 #    install_dir    => '/var/www/htdocs/racktables',
 #  }
 #
 #  Get RackTables from git repo and put variables in secret.php
 #   to init db automatically:
 #
-#  class { racktables:
+#  class { 'racktables':
 #    install_dir    => '/var/www/htdocs/racktables',
 #    use_installer  => false,
 #    db_name        => 'racktables',
@@ -138,7 +138,7 @@ class racktables (
 
   case $install_deps {
 
-    default,'min': {
+    default,'minimal': {
       $php_deps = ['php-pdo', 'php-mysql', 'php-mbstring', 'php-gd', 'php-bcmath']
       package {$php_deps:
         ensure => present,
