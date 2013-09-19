@@ -2,6 +2,10 @@
 
 Puppet module to manage [RackTables](http://racktables.org/) installation. This module clones git repository to demanded location, inits database (or leaves it for manual initialization via web) and provides simple vhost for apache (httpd) (and nginx in future). Module installs necessary PHP dependencies.  
 
+For an automated version default credentials are:
+login: admin
+password: admin
+
 ## Usage
 Get RackTables from [its git repo](https://github.com/RackTables/racktables) and use apache vhost and continue installation via web:
 
