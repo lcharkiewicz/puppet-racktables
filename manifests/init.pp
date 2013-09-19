@@ -168,7 +168,6 @@ class racktables (
     unless  => "/usr/bin/test -f ${install_dir}/wwwroot/inc/secret.php",
   } ->
 
-  #TODO get last init-full.sql version automatically
   exec {'initialize database':
     cwd     => '/tmp/racktables-contribs/demo.racktables.org',
     command => "/usr/bin/mysql -h ${db_host} -u ${db_username} -p${db_password} ${db_name} < $(ls -1 | grep '.sql' | sort -n | tail -1)",

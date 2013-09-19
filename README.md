@@ -34,5 +34,4 @@ Get RackTables from git repo and put variables in secret.php to init database au
 
 ## TODO
 + vhost file for nginx
-+ get latest version number automatically (for init db purpose)
 + tests? :)
