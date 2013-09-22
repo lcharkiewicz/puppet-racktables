@@ -23,6 +23,20 @@
 #   Does not create secret.php and you have to use web installer.
 #   If set false it inits datebase and put parameters in secret.php.
 #   With 'false' it is fully automated.
+#   Default: false.
+#
+# [*install_deps*]
+#   Installs PHP dependencies. You can choose between 'all', 'minimal' or 'none'.
+#
+# [*web_server*]
+#   Installs chosen web server and provides propoer vhost config.
+#   Default: apache (httpd)
+#
+# [*server_name*]
+#   ServerName for vhost purposes.
+#
+# [*server_aliases*]
+#   ServerAlias for vhost purposes.
 #
 # [*db_name*]
 #   Database name for secret.php file.
@@ -35,50 +49,32 @@
 #
 # [*db_password*]
 #   Database password for secret.php file.
-
-# [*server_name*]
-#   ServerName for vhost purposes.
-#
-# [*server_aliases*]
-#   ServerAlias for vhost purposes.
 #
 # [*git_repo_url*]
 #   URL for RackTables git repository.
 #
-# [*install_deps*]
-#   Installs PHP dependencies. You can choose between 'all', 'minimal' or 'none'.
-#
-# [*install_apache*]
-#   Installs apache (httpd) (if not installed already) and starts it.
-#
-# [*include_apache_vhost*]
-#   Provides apache vhost file in /etc/httpd/conf.d (RH family at the moment).
-#
-# [*install_nginx*]
-#   Install ngninx (if not installed already) and starts it.
-#
-# [*include_nginx_vhost*]
-#   Provides nginx vhost file in /etc/nginx/racktables.conf (TODO).
-#
 # === Examples
 #
-#  Get RackTables from git repo and use apache vhost
-#   and continue installation via web:
+#  Get RackTables from git repo, set apache vhost
+#  and continue installation via web:
 #
 #  class { 'racktables':
-#    install_dir    => '/var/www/htdocs/racktables',
+#    install_dir   => '/var/www/htdocs/racktables',
+#    use_installer => true,
 #  }
 #
-#  Get RackTables from git repo and put variables in secret.php
-#   to init db automatically:
+#  Get RackTables from git repo, set nginx vhost (with server_name),
+#  install all PHP dependencies, create proper secret.php to init database automatically:
 #
 #  class { 'racktables':
-#    install_dir    => '/var/www/htdocs/racktables',
-#    use_installer  => false,
-#    db_name        => 'racktables',
-#    db_host        => 'localhost',
-#    db_username    => 'racktables',
-#    db_password    => 'racktables'
+#    install_dir  => '/var/www/htdocs/racktables',
+#    install_deps => 'all',
+#    web_server   => 'nginx',
+#    server_name  => 'racktables.example.com',
+#    db_name      => 'racktables',
+#    db_host      => 'localhost',
+#    db_username  => 'racktables',
+#    db_password  => 'racktables',
 #  }
 #
 # === Authors
@@ -87,46 +83,26 @@
 #
 class racktables (
   $install_dir,
-  $use_installer = true,
+  $use_installer = false,
+  $install_deps = 'min',
+  $web_server = 'apache',
+  $server_name = $::fqdn,
+  $server_aliases = undef,
   $db_name = 'racktables',
   $db_host = 'localhost',
   $db_username = 'racktables',
   $db_password = 'racktables',
-  $server_name = $::fqdn,
-  $server_aliases = undef,
   $git_repo_url = 'https://github.com/RackTables/racktables.git',
-  $install_deps = 'min',
-  $install_apache = true,
-  $include_apache_vhost = true,
-  $install_nginx = false, # TODO
-  $include_nginx_vhost = false,
 ) {
 
-  if $install_apache == true {
-    if $install_nginx == true {
-      fail('Apache and Nginx cannot be enabled simultaneously')
-    }
-  }
-
-
-  if $install_apache == true {
-    class {'racktables::apache':
-      include_apache_vhost => $include_apache_vhost
-    }
-  }
-
-
-  if $install_nginx == true {
-    class {'racktables::nginx':
-      # TODO
-      include_nginx_vhost => $include_nginx_vhost
-    }
-  }
-
+  class {'racktables::web_server':
+    web_server   => $web_server,
+    install_deps => $install_deps,
+  } ->
 
   exec {'create install dir':
     command => "/bin/mkdir -p ${install_dir}",
-    unless  => "/usr/bin/test -d ${install_dir}"
+    unless  => "/usr/bin/test -d ${install_dir}",
   } ->
 
   package {'git':
@@ -140,52 +116,36 @@ class racktables (
   }
 
 
-  case $install_deps {
+  if $use_installer == false {
+    exec {'clean after failed installation':
+      command => '/bin/rm -rf /tmp/racktables-contribs',
+      unless  => '/usr/bin/test ! -d /tmp/racktables-contribs',
+    } ->
 
-    default,'minimal': {
-      $php_deps = ['php-pdo', 'php-mysql', 'php-mbstring', 'php-gd', 'php-bcmath']
-      package {$php_deps:
-        ensure => present,
-      }
+    exec {'clone racktables contrib repo':
+      command => '/usr/bin/git clone https://github.com/RackTables/racktables-contribs /tmp/racktables-contribs',
+      unless  => "/usr/bin/test -f ${install_dir}/wwwroot/inc/secret.php",
+    } ->
+
+    exec {'initialize database':
+      cwd     => '/tmp/racktables-contribs/demo.racktables.org',
+      command => "/usr/bin/mysql -h ${db_host} -u ${db_username} -p${db_password} ${db_name} < $(ls -1 | grep '.sql' | sort -n | tail -1)",
+      unless  => "/usr/bin/mysql -h ${db_host} -u ${db_username} -p${db_password} ${db_name} -e 'DESCRIBE VSIPs'",
+    } ->
+
+    file {"${install_dir}/wwwroot/inc/secret.php":
+      ensure  => file,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0666',
+      content => template('racktables/secret.php.erb'),
+      require => Exec['clone git repo'],
+    } ->
+
+    exec {'clean after db init procedure':
+      command => '/bin/rm -rf /tmp/racktables-contribs',
+      unless  => '/usr/bin/test ! -d /tmp/racktables-contribs',
     }
-
-    'all': {
-      $php_deps = ['php-pdo', 'php-mysql', 'php-mbstring', 'php-gd',  'php-bcmath', 'php-snmp', 'php-ldap', 'php-pear-Image-GraphViz']
-      package {$php_deps:
-        ensure => present,
-      }
-    }
-
-    'none': {
-      notice('Did not installed any PHP dependencies.')
-    }
-
-  }
-
-
-  exec {'clone racktables contrib repo':
-    command => "/usr/bin/git clone https://github.com/RackTables/racktables-contribs /tmp/racktables-contribs",
-    unless  => "/usr/bin/test -f ${install_dir}/wwwroot/inc/secret.php",
-  } ->
-
-  exec {'initialize database':
-    cwd     => '/tmp/racktables-contribs/demo.racktables.org',
-    command => "/usr/bin/mysql -h ${db_host} -u ${db_username} -p${db_password} ${db_name} < $(ls -1 | grep '.sql' | sort -n | tail -1)",
-    unless  => "/usr/bin/mysql -h ${db_host} -u ${db_username} -p${db_password} ${db_name} -e 'DESCRIBE VSIPs'",
-  } ->
-
-  file {"${install_dir}/wwwroot/inc/secret.php":
-    ensure  => file,
-    owner   => 'apache',
-    group   => 'apache',
-    mode    => '0600',
-    content => template('racktables/secret.php.erb'),
-    require => Exec['clone git repo'],
-  } ->
-
-  exec {'clean after db init procedure':
-    command => '/bin/rm -rf /tmp/racktables-contribs',
-    unless  => '/usr/bin/test ! -d /tmp/racktables-contribs',
   }
 
 }

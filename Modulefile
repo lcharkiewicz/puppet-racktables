@@ -1,4 +1,4 @@
-name    'puppet-racktables'
+name    'illuminatis-racktables'
 version '0.0.1'
 source 'git@github.com:illuminatis/puppet-racktables.git'
 author 'Leszek Charkiewicz'
