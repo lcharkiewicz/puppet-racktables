@@ -1,5 +1,5 @@
 name    'illuminatis-racktables'
-version '0.0.1'
+version '0.0.2'
 source 'git@github.com:illuminatis/puppet-racktables.git'
 author 'Leszek Charkiewicz'
 license 'Apache License, Version 2.0'
