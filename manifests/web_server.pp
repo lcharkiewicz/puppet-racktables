@@ -1,4 +1,7 @@
-#
+# This manifest is reponsible for installation (or check if installed)
+# selected PHP dependencies and a web server, create vhost file
+# and reload services.
+# 
 class racktables::web_server (
   $web_server = 'apache',
   $install_deps = 'minimal',
@@ -55,7 +58,7 @@ class racktables::web_server (
       $vhost_conf = $nginx_vhost_conf
       package {$php_fpm:
         ensure  => installed,
-        require => Package[$package_name],
+        require => File[$vhost_conf],
       } ->
       service {$php_fpm:
         ensure  => running,
@@ -89,7 +92,6 @@ class racktables::web_server (
     'none': { }
   }
 
-
   package {$package_name:
     ensure => present,
   } ->
@@ -105,9 +107,7 @@ class racktables::web_server (
     group   => 'root',
     mode    => '0644',
     content => template($vhost_template),
-    # TODO - restart php5-fpm after installing PHP dependecies
-    notify  => Exec["/etc/init.d/${service_name} restart", "/etc/init.d/${php-fpm} restart"],
-    before  => Exec["/etc/init.d/${service_name} restart"],
+    notify  => Exec["/etc/init.d/${service_name} reload"],
     require => Package[$package_name],
   }
 
@@ -121,8 +121,9 @@ class racktables::web_server (
       command => "/bin/ln -s ${vhost_conf} ${vhost_enabled}",
       unless  => "/usr/bin/test -L ${vhost_enabled}",
       require => File[$vhost_conf],
+      notify  => Exec["/etc/init.d/${php_fpm} restart"]
     } ->
-    exec {"/etc/init.d/${service_name} restart":
+    exec {"/etc/init.d/${service_name} reload":
       refreshonly  => true,
     } ->
     exec {"/etc/init.d/${php_fpm} restart":
@@ -130,7 +131,7 @@ class racktables::web_server (
     }
   }
   else {
-    exec {"/etc/init.d/${service_name} restart":
+    exec {"/etc/init.d/${service_name} reload":
       refreshonly  => true,
     }
   }

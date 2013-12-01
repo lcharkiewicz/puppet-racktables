@@ -1,9 +1,10 @@
 # == Class: racktables
 #
 # Simple module to manage RackTables (http://racktables.org) installation.
-# Module clones git repo and put files in a selected place.
-# After that you have to finish installation via web browser or you can init
-# an empty database (it is fully automated but it is not a default option!).
+# Module clones git repo and puts files in a selected place.
+# Installation is fully automated. After that you can log into your site
+# (default address is the same as host's FQDN). If you do not like the automatic
+# way you will have to finish installation manually via web browser.
 # Module installs necessary PHP dependencies.
 # Module assumes you have already created MySQL database.
 # Module provides simple vhost config file as well.
@@ -18,40 +19,49 @@
 #
 # [*install_dir*]
 #   Location where racktables files will be extracted (mandatory).
+#   Default:
 #
 # [*use_installer*]
-#   Does not create secret.php and you have to use web installer.
+#   Does not create secret.php file and you have to use web installer.
 #   If set false it inits datebase and put parameters in secret.php.
 #   With 'false' it is fully automated.
 #   Default: false.
 #
 # [*install_deps*]
 #   Installs PHP dependencies. You can choose between 'all', 'minimal' or 'none'.
+#   Default: 'min'
 #
 # [*web_server*]
-#   Installs chosen web server and provides propoer vhost config.
-#   Default: apache (httpd)
+#   Installs chosen web server and provides proper vhost config.
+#   Default: 'apache' (httpd)
 #
 # [*server_name*]
 #   ServerName for vhost purposes.
+#   Default: "${::fqdn}" (FQDN of a host)
 #
 # [*server_aliases*]
 #   ServerAlias for vhost purposes.
+#   Default:
 #
 # [*db_name*]
 #   Database name for secret.php file.
+#   Default: 'racktables'
 #
 # [*db_host*]
 #   Database host for secret.php file.
+#   Default: 'localhost'
 #
 # [*db_username*]
 #   Database user for secret.php file.
+#   Default: 'racktables_user'
 #
 # [*db_password*]
 #   Database password for secret.php file.
+#   Default: 'racktables_pass'
 #
 # [*git_repo_url*]
 #   URL for RackTables git repository.
+#   Default: 'https://github.com/RackTables/racktables.git'
 #
 # === Examples
 #
@@ -63,8 +73,9 @@
 #    use_installer => true,
 #  }
 #
-#  Get RackTables from git repo, set nginx vhost (with server_name),
-#  install all PHP dependencies, create proper secret.php to init database automatically:
+#  Get RackTables from git repo, set nginx vhost (with your server_name),
+#  install all PHP dependencies, create proper secret.php and init database
+#  automatically:
 #
 #  class { 'racktables':
 #    install_dir  => '/var/www/htdocs/racktables',
@@ -114,7 +125,6 @@ class racktables (
     command => "/usr/bin/git clone ${git_repo_url} .",
     unless  => "/usr/bin/test -d ${install_dir}/.git",
   }
-
 
   if $use_installer == false {
     exec {'clean after failed installation':
